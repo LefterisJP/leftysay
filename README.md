@@ -19,6 +19,7 @@ leftysay --text "Hello" --pack default
 leftysay --image /path/to/pic.jpg --no-bubble
 leftysay --list
 leftysay --doctor
+leftysay --text "$(fortune)"
 ```
 
 ## Config
@@ -43,6 +44,32 @@ Available format values: `auto`, `symbols`, `kitty`, `iterm`, `sixels`.
 Available color values: `auto`, `full`, `256`, `16`.
 
 See `config.example.toml` for a ready-to-copy config.
+
+## Run On Terminal Startup
+
+Bash (`~/.bashrc`):
+
+```bash
+if command -v leftysay >/dev/null 2>&1; then
+  leftysay --text "$(fortune)"
+fi
+```
+
+Zsh (`~/.zshrc`):
+
+```bash
+if command -v leftysay >/dev/null 2>&1; then
+  leftysay --text "$(fortune)"
+fi
+```
+
+Fish (`~/.config/fish/config.fish`):
+
+```fish
+if type -q leftysay
+  leftysay --text (fortune)
+end
+```
 
 ## Packs
 
@@ -70,6 +97,8 @@ license = "CC0-1.0"
 description = "Safe default pack"
 images_dir = "images"
 ```
+
+Default pack ships Kenney's platformer character sprites (from the Kenney Platformer Characters pack).
 
 ## License
 
