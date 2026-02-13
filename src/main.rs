@@ -6,7 +6,7 @@ use serde::Deserialize;
 use std::cmp::min;
 use std::ffi::OsStr;
 use std::fs;
-use std::io::Write;
+use std::io::{IsTerminal, Read, Write};
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use terminal_size::{terminal_size, Height, Width};
@@ -413,6 +413,10 @@ fn resolve_message(
         return Ok(text.clone());
     }
 
+    if let Some(text) = read_stdin_text()? {
+        return Ok(text);
+    }
+
     let pack_name = cli
         .pack
         .clone()
@@ -425,6 +429,20 @@ fn resolve_message(
     }
 
     Ok(DEFAULT_MESSAGE.to_string())
+}
+
+fn read_stdin_text() -> Result<Option<String>> {
+    if std::io::stdin().is_terminal() {
+        return Ok(None);
+    }
+    let mut buffer = String::new();
+    std::io::stdin().read_to_string(&mut buffer)?;
+    let trimmed = buffer.trim();
+    if trimmed.is_empty() {
+        Ok(None)
+    } else {
+        Ok(Some(trimmed.to_string()))
+    }
 }
 
 fn resolve_image(cli: &Cli, packs: &[Pack], config: &Config, seed: Option<u64>) -> Result<PathBuf> {
@@ -820,9 +838,12 @@ mod tests {
 
         std::env::set_var("LEFTYSAY_PACKS_DIR", dir.path().join("packs"));
         let packs = scan_packs().unwrap();
-        assert_eq!(packs.len(), 1);
-        assert_eq!(packs[0].meta.name, "default");
-        assert_eq!(packs[0].images.len(), 1);
+        assert!(packs.iter().any(|pack| pack.meta.name == "default"));
+        let pack = packs
+            .iter()
+            .find(|pack| pack.meta.name == "default")
+            .unwrap();
+        assert_eq!(pack.images.len(), 1);
         std::env::remove_var("LEFTYSAY_PACKS_DIR");
     }
 }

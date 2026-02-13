@@ -20,7 +20,10 @@ leftysay --image /path/to/pic.jpg --no-bubble
 leftysay --list
 leftysay --doctor
 leftysay --text "$(fortune)"
+fortune -a | leftysay
 ```
+
+If `leftysay` receives text on stdin (piped), it uses that as the message when `--text` is not provided.
 
 ## Config
 
