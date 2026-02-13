@@ -1,0 +1,5 @@
+name = "default"
+version = "0.1.0"
+license = "CC0-1.0"
+description = "Eurasian robin starter pack"
+images_dir = "images"
