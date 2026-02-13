@@ -11,6 +11,22 @@ Install hints:
 - Arch: `sudo pacman -S chafa`
 - macOS: `brew install chafa`
 
+## Install
+
+System install (Linux/macOS with GNU install):
+
+```bash
+make install
+```
+
+User install (no sudo):
+
+```bash
+make install PREFIX="$HOME/.local"
+```
+
+This installs the binary to `$(PREFIX)/bin` and packs to `$(PREFIX)/share/leftysay/packs`, which matches the pack search paths.
+
 ## Usage
 
 ```bash
