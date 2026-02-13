@@ -107,7 +107,7 @@ struct Pack {
     messages: Vec<String>,
 }
 
-#[derive(Clone, Copy, Debug, Deserialize, ValueEnum)]
+#[derive(Clone, Copy, Debug, Deserialize, ValueEnum, PartialEq)]
 #[serde(rename_all = "lowercase")]
 enum ChafaFormat {
     Auto,
@@ -135,12 +135,18 @@ impl ChafaFormat {
     }
 }
 
-#[derive(Clone, Copy, Debug, Deserialize, ValueEnum)]
+#[derive(Clone, Copy, Debug, Deserialize, ValueEnum, PartialEq)]
 #[serde(rename_all = "lowercase")]
 enum ChafaColors {
     Auto,
+    #[serde(alias = "full")]
+    #[value(alias = "full")]
     Truecolor,
+    #[serde(alias = "256")]
+    #[value(alias = "256")]
     C256,
+    #[serde(alias = "16")]
+    #[value(alias = "16")]
     C16,
 }
 
@@ -544,30 +550,34 @@ fn run_chafa(
         return Ok(String::from_utf8_lossy(&output.stdout).to_string());
     }
 
-    // Older chafa builds don't support `--format auto`; fall back to symbols.
+    let mut last_err = String::from_utf8_lossy(&output.stderr).to_string();
+    let mut fallback_format = format;
+    let mut fallback_colors = colors;
+
     if matches!(format, ChafaFormat::Auto) {
+        fallback_format = ChafaFormat::Unicode;
+    }
+    if matches!(colors, ChafaColors::Auto) {
+        fallback_colors = ChafaColors::Truecolor;
+    }
+
+    if fallback_format != format || fallback_colors != colors {
         let retry = run_chafa_once(
             chafa,
             image,
             cols,
             rows,
-            ChafaFormat::Unicode,
-            colors,
+            fallback_format,
+            fallback_colors,
             animate,
         )?;
         if retry.status.success() {
             return Ok(String::from_utf8_lossy(&retry.stdout).to_string());
         }
-        return Err(anyhow!(
-            "chafa failed: {}",
-            String::from_utf8_lossy(&retry.stderr)
-        ));
+        last_err = String::from_utf8_lossy(&retry.stderr).to_string();
     }
 
-    Err(anyhow!(
-        "chafa failed: {}",
-        String::from_utf8_lossy(&output.stderr)
-    ))
+    Err(anyhow!("chafa failed: {last_err}"))
 }
 
 fn run_chafa_once(

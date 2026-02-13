@@ -40,6 +40,7 @@ animate = false
 CLI flags take precedence over config, then defaults.
 
 Available format values: `auto`, `symbols`, `kitty`, `iterm`, `sixels`.
+Available color values: `auto`, `full`, `256`, `16`.
 
 See `config.example.toml` for a ready-to-copy config.
 
