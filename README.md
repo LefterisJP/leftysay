@@ -1,4 +1,5 @@
 # leftysay
+<img width="482" height="647" alt="2026-02-14_00-31" src="https://github.com/user-attachments/assets/0390cd55-c997-4bc5-a148-045a632fd58c" />
 
 `leftysay` is a cross-platform CLI greeter that prints a wrapped speech bubble plus an image rendered to the terminal via `chafa`.
 
