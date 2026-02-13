@@ -486,6 +486,8 @@ fn render_bubble(text: &str, term_cols: usize) -> Vec<String> {
     }
     lines.push(format!(" {}", "-".repeat(max_line_len + 2)));
 
+    append_tail(&mut lines, max_line_len + 2, term_cols);
+
     lines
 }
 
@@ -495,6 +497,22 @@ fn pad_line(line: &str, width: usize) -> String {
         s.push_str(&" ".repeat(width - line.len()));
     }
     s
+}
+
+fn append_tail(lines: &mut Vec<String>, bubble_inner_width: usize, term_cols: usize) {
+    let bubble_width = bubble_inner_width + 2;
+    let bubble_indent = 1usize;
+    let bubble_right = bubble_indent + bubble_width;
+    let mut start_col = bubble_right + 1;
+    if start_col + 1 >= term_cols {
+        start_col = bubble_indent + bubble_width.saturating_sub(1);
+    }
+
+    let tail = ["o", " o", "  o"];
+    for (i, segment) in tail.iter().enumerate() {
+        let spaces = start_col.saturating_add(i);
+        lines.push(format!("{:width$}{}", "", segment, width = spaces));
+    }
 }
 
 fn render_image(chafa: &Path, image: &Path, options: RenderOptions) -> Result<String> {
@@ -734,7 +752,8 @@ mod tests {
         let lines = render_bubble("hello world from leftysay", 40);
         assert!(lines.len() >= 3);
         assert!(lines.first().unwrap().contains('_'));
-        assert!(lines.last().unwrap().contains('-'));
+        assert!(lines.iter().any(|line| line.contains('-')));
+        assert!(lines.iter().any(|line| line.trim().starts_with('o')));
     }
 
     #[test]
