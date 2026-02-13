@@ -28,7 +28,7 @@ Config file: `~/.config/leftysay/config.toml`
 ```toml
 enabled = true
 default_pack = "default"
-format = "auto"
+format = "auto" # use "symbols" if your chafa does not support "auto"
 colors = "auto"
 max_height_ratio = 0.55
 bubble_style = "classic"
@@ -38,6 +38,10 @@ animate = false
 ```
 
 CLI flags take precedence over config, then defaults.
+
+Available format values: `auto`, `symbols`, `kitty`, `iterm`, `sixels`.
+
+See `config.example.toml` for a ready-to-copy config.
 
 ## Packs
 

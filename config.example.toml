@@ -1,0 +1,12 @@
+# Example configuration for leftysay
+
+enabled = true
+default_pack = "default"
+# Prefer "symbols" if your chafa does not support "auto"
+format = "auto"
+colors = "auto"
+max_height_ratio = 0.55
+bubble_style = "classic"
+cache = true
+cache_max_mb = 64
+animate = false

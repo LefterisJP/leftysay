@@ -111,9 +111,15 @@ struct Pack {
 #[serde(rename_all = "lowercase")]
 enum ChafaFormat {
     Auto,
+    #[serde(alias = "symbols")]
+    #[value(alias = "symbols")]
     Unicode,
     Kitty,
+    #[serde(alias = "iterm")]
+    #[value(alias = "iterm")]
     Iterm2,
+    #[serde(alias = "sixels")]
+    #[value(alias = "sixels")]
     Sixel,
 }
 
@@ -121,10 +127,10 @@ impl ChafaFormat {
     fn as_arg(self) -> &'static str {
         match self {
             ChafaFormat::Auto => "auto",
-            ChafaFormat::Unicode => "unicode",
+            ChafaFormat::Unicode => "symbols",
             ChafaFormat::Kitty => "kitty",
-            ChafaFormat::Iterm2 => "iterm2",
-            ChafaFormat::Sixel => "sixel",
+            ChafaFormat::Iterm2 => "iterm",
+            ChafaFormat::Sixel => "sixels",
         }
     }
 }
@@ -533,6 +539,46 @@ fn run_chafa(
     colors: ChafaColors,
     animate: bool,
 ) -> Result<String> {
+    let output = run_chafa_once(chafa, image, cols, rows, format, colors, animate)?;
+    if output.status.success() {
+        return Ok(String::from_utf8_lossy(&output.stdout).to_string());
+    }
+
+    // Older chafa builds don't support `--format auto`; fall back to symbols.
+    if matches!(format, ChafaFormat::Auto) {
+        let retry = run_chafa_once(
+            chafa,
+            image,
+            cols,
+            rows,
+            ChafaFormat::Unicode,
+            colors,
+            animate,
+        )?;
+        if retry.status.success() {
+            return Ok(String::from_utf8_lossy(&retry.stdout).to_string());
+        }
+        return Err(anyhow!(
+            "chafa failed: {}",
+            String::from_utf8_lossy(&retry.stderr)
+        ));
+    }
+
+    Err(anyhow!(
+        "chafa failed: {}",
+        String::from_utf8_lossy(&output.stderr)
+    ))
+}
+
+fn run_chafa_once(
+    chafa: &Path,
+    image: &Path,
+    cols: usize,
+    rows: usize,
+    format: ChafaFormat,
+    colors: ChafaColors,
+    animate: bool,
+) -> Result<std::process::Output> {
     let mut cmd = Command::new(chafa);
     cmd.arg(image)
         .arg("--format")
@@ -545,14 +591,7 @@ fn run_chafa(
         cmd.arg("--animate");
     }
 
-    let output = cmd.output().with_context(|| "running chafa")?;
-    if !output.status.success() {
-        return Err(anyhow!(
-            "chafa failed: {}",
-            String::from_utf8_lossy(&output.stderr)
-        ));
-    }
-    Ok(String::from_utf8_lossy(&output.stdout).to_string())
+    cmd.output().with_context(|| "running chafa")
 }
 
 fn cache_key(
