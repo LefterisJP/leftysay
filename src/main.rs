@@ -11,6 +11,7 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 use terminal_size::{terminal_size, Height, Width};
 use textwrap::wrap;
+use unicode_width::UnicodeWidthStr;
 use walkdir::WalkDir;
 
 const DEFAULT_MESSAGE: &str = "Hello from leftysay!";
@@ -460,16 +461,17 @@ fn render_bubble(text: &str, term_cols: usize) -> Vec<String> {
     }
 
     let bubble_width = min(term_cols.saturating_sub(padding), DEFAULT_BUBBLE_MAX_WIDTH);
-    let wrapped: Vec<String> = wrap(text, bubble_width)
-        .into_iter()
-        .map(|line| line.into_owned())
-        .collect();
+    let wrapped = wrap_text_lines(text, bubble_width);
 
     if wrapped.is_empty() {
         return Vec::new();
     }
 
-    let max_line_len = wrapped.iter().map(|line| line.len()).max().unwrap_or(0);
+    let max_line_len = wrapped
+        .iter()
+        .map(|line| UnicodeWidthStr::width(line.as_str()))
+        .max()
+        .unwrap_or(0);
     let mut lines = Vec::new();
     lines.push(format!(" {}", "_".repeat(max_line_len + 2)));
     if wrapped.len() == 1 {
@@ -493,8 +495,9 @@ fn render_bubble(text: &str, term_cols: usize) -> Vec<String> {
 
 fn pad_line(line: &str, width: usize) -> String {
     let mut s = line.to_string();
-    if line.len() < width {
-        s.push_str(&" ".repeat(width - line.len()));
+    let line_width = UnicodeWidthStr::width(line);
+    if line_width < width {
+        s.push_str(&" ".repeat(width - line_width));
     }
     s
 }
@@ -513,6 +516,25 @@ fn append_tail(lines: &mut Vec<String>, bubble_inner_width: usize, term_cols: us
         let spaces = start_col.saturating_add(i);
         lines.push(format!("{:width$}{}", "", segment, width = spaces));
     }
+}
+
+fn wrap_text_lines(text: &str, width: usize) -> Vec<String> {
+    let mut lines = Vec::new();
+    let normalized = text.replace('\t', "    ");
+    for raw_line in normalized.lines() {
+        let trimmed = raw_line.trim_end();
+        if trimmed.is_empty() {
+            lines.push(String::new());
+            continue;
+        }
+        for line in wrap(trimmed, width) {
+            lines.push(line.into_owned());
+        }
+    }
+    if lines.is_empty() {
+        lines.push(String::new());
+    }
+    lines
 }
 
 fn render_image(chafa: &Path, image: &Path, options: RenderOptions) -> Result<String> {
@@ -749,7 +771,7 @@ mod tests {
 
     #[test]
     fn bubble_renders_multiple_lines() {
-        let lines = render_bubble("hello world from leftysay", 40);
+        let lines = render_bubble("hello\tworld from leftysay", 40);
         assert!(lines.len() >= 3);
         assert!(lines.first().unwrap().contains('_'));
         assert!(lines.iter().any(|line| line.contains('-')));
